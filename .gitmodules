@@ -1,0 +1,12 @@
+[submodule "Drivers/CMSIS_5"]
+	path = Drivers/CMSIS_5
+	url = git@github.com:ARM-software/CMSIS_5.git
+[submodule "Drivers/cmsis_device_f4"]
+	path = Drivers/cmsis_device_f4
+	url = git@github.com:STMicroelectronics/cmsis_device_f4.git
+[submodule "Drivers/stm32f4xx_hal_driver"]
+	path = Drivers/stm32f4xx_hal_driver
+	url = git@github.com:STMicroelectronics/stm32f4xx_hal_driver.git
+[submodule "azureRtos/threadx"]
+	path = azureRtos/threadx
+	url = git@github.com:azure-rtos/threadx.git

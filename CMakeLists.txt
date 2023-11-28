@@ -1,11 +1,11 @@
 ########################################################################################################################
-# <Setup build environment>
+# <Project bane and minimum cmake version>
 ########################################################################################################################
 set(PROJECT_NAME "ChassisController")
 
 cmake_minimum_required(VERSION 3.26)
 ########################################################################################################################
-# </Setup build environment>
+# </Project bane and minimum cmake version>
 ########################################################################################################################
 
 ########################################################################################################################
@@ -42,7 +42,6 @@ endif ()
 ########################################################################################################################
 # <Common configuration>
 ########################################################################################################################
-project(${PROJECT_NAME} C CXX ASM)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 17)
 
@@ -60,6 +59,8 @@ set(CMAKE_C_STANDARD 17)
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "TestsBuild")
     set(CMAKE_C_COMPILER gcc)
     set(CMAKE_CXX_COMPILER g++)
+
+    project(${PROJECT_NAME} C CXX ASM)
 ########################################################################################################################
 # </Test configuration>
 # Configuration for running tests (unit and other) on PC
@@ -79,44 +80,54 @@ else()
     set(SIZE arm-none-eabi-size)
     set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
+    project(${PROJECT_NAME} C CXX ASM)
+
 ########################################################################################################################
     #Uncomment for hardware floating point
-    add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
-    add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
-    add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
+    add_compile_definitions(
+            ARM_MATH_CM4;
+            ARM_MATH_MATRIX_CHECK;
+            ARM_MATH_ROUNDING
+    )
+    add_compile_options(
+            -mfloat-abi=hard
+            -mfpu=fpv4-sp-d16
+    )
+    add_link_options(
+            -mfloat-abi=hard
+            -mfpu=fpv4-sp-d16
+    )
 
     #Uncomment for software floating point
     #add_compile_options(-mfloat-abi=soft)
 ########################################################################################################################
 
-    add_compile_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)
-    add_compile_options(-ffunction-sections -fdata-sections -fno-common -fmessage-length=0)
+    add_compile_options(
+            -mcpu=cortex-m4
+            -mthumb
+            -mthumb-interwork
+            -ffunction-sections
+            -fdata-sections
+            -fno-common
+            -fmessage-length=0
+    )
     # Enable assembler files preprocessing
     add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-x$<SEMICOLON>assembler-with-cpp>)
 
     #Definitions passed to program during compilation time
     add_definitions(
             -DDEBUG
+            -DTX_INCLUDE_USER_DEFINE_FILE
             -DUSE_HAL_DRIVER
             -DSTM32F401xC
             -DTX_INCLUDE_USER_DEFINE_FILE
     )
 
-    #Modify as needed
-    include_directories(
-            Core/Inc
+    set(THREADX_ARCH cortex_m4)
+    set(THREADX_TOOLCHAIN gnu)
 
-            Drivers/STM32F4xx_HAL_Driver/Inc
-            Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
-            Drivers/CMSIS/Device/ST/STM32F4xx/Include
-            Drivers/CMSIS/Include
-
-            AZURE_RTOS/App
-
-            Middlewares/ST/threadx/common/inc/
-            Middlewares/ST/threadx/ports/cortex_m4/gnu/inc/
-            Middlewares/ST/threadx/utility/low_power/
-    )
+    add_subdirectory(./Drivers)
+    add_subdirectory(./azureRtos/threadx)
 
     #passing source files
     file(GLOB_RECURSE SOURCES
@@ -124,7 +135,17 @@ else()
             "ThreadX/*.*"
             "Core/*.*"
             "Middlewares/*.*"
-            "Drivers/*.*"
+    )
+
+    #Modify as needed
+    include_directories(
+            ./Core/Inc
+
+            ./AZURE_RTOS/App
+
+            #Middlewares/ST/threadx/common/inc/
+            #Middlewares/ST/threadx/ports/cortex_m4/gnu/inc/
+            #Middlewares/ST/threadx/utility/low_power/
     )
 
     set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F401CCUX_FLASH.ld)
@@ -134,6 +155,12 @@ else()
     add_link_options(-T ${LINKER_SCRIPT})
 
     add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
+
+    target_link_libraries(${PROJECT_NAME}.elf
+            PUBLIC
+            threadx
+            IcManufacturerDrivers
+    )
 
     set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
     set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)
